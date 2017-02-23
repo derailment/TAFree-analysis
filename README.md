@@ -2,7 +2,7 @@
 Here are analytic tools for performing usage of TAFree Online Judge in first programming course.
   
 # Configuration
-Please change database information in __Recorder.php.example__
+Please change database information in *Recorder.php.example*
 ```
 interface IConnectInfo {
 	const HOST = '45.32.107.147';
