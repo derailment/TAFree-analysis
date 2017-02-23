@@ -17,5 +17,5 @@ interface IConnectInfo {
 ```
 sudo git clone http://github.com/derailment/student-code-analysis
 sudo chmod a+w ./student-code-analysis
-sudo php Recorder.php
+sudo php Recorder.php [Item] [subitem]
 ```
