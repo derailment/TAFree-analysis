@@ -1,7 +1,7 @@
 # student-code-analysis
 Here are analytic tools for performing usage of TAFree Online Judge in first programming course.
   
-# Configuration
+## Configuration
 Please change database information in *Recorder.php.example*
 ```
 interface IConnectInfo {
@@ -13,7 +13,7 @@ interface IConnectInfo {
 }
 ```
   
-# Build and Run
+## Build and Run
 ```
 sudo git clone http://github.com/derailment/student-code-analysis
 sudo chmod a+w ./student-code-analysis
