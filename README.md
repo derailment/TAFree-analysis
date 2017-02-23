@@ -2,7 +2,7 @@
 Here are analytic tools for performing usage of TAFree Online Judge in first programming course.
   
 # Configuration
-* Please change database information in __*.example__
+Please change database information in __*.example__
 ```
 interface IConnectInfo {
 	const HOST = '45.32.107.147';
@@ -17,4 +17,5 @@ interface IConnectInfo {
 ```
 sudo git clone http://github.com/derailment/student-code-analysis
 sudo chmod a+w ./student-code-analysis
+sudo php Recorder.php
 ```
