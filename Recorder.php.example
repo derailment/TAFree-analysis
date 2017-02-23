@@ -36,18 +36,18 @@ class Recorder {
 		$this->handle = fopen($this->filename, 'w');
 		
 		// Configure title
-        $this->fields = array();
-        $timestamp = 'Timestamp';
-        $student_name = 'Student Name';
-        $student_account = 'Student Account';
-        $status = 'Status'; 
-        array_push($this->fields, $timestamp);
-        array_push($this->fields, $student_name);
-        array_push($this->fields, $student_account);
-        array_push($this->fields, $status);
-        fputcsv($this->handle, $this->fields);
-        
-        // Configure content
+		$this->fields = array();
+		$timestamp = 'Timestamp';
+		$student_name = 'Student Name';
+		$student_account = 'Student Account';
+		$status = 'Status'; 
+		array_push($this->fields, $timestamp);
+		array_push($this->fields, $student_name);
+		array_push($this->fields, $student_account);
+		array_push($this->fields, $status);
+		fputcsv($this->handle, $this->fields);
+		
+		// Configure content
 		try {
 			$this->hookup = UniversalConnect::doConnect();
 			
@@ -55,7 +55,7 @@ class Recorder {
 			$stmt->execute();
 			$this->fields = array();
 			while($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-                array_push($this->fields, $row['timestamp']);
+            			array_push($this->fields, $row['timestamp']);
 				array_push($this->fields, $row['student_name']);
 				array_push($this->fields, $row['student_account']);
 				array_push($this->fields, $row['status']);
@@ -77,8 +77,8 @@ class Recorder {
 
 interface IConnectInfo {
 	const HOST = '45.32.107.147';
-	const UNAME = 'derailment';
-	const PW = 'ewre3571';
+	const UNAME = 'account';
+	const PW = 'password';
 	const DBNAME = 'TAFreeDB';
 	public static function doConnect();
 }
