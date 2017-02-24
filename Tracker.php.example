@@ -1,0 +1,118 @@
+<?php 
+/**
+ * Track students' submission records in fixed time interval from TAFree
+ *
+ * @authur Yu Tzu Wu <abby8050@gmail.com>
+ * @license MIT
+ */
+
+ini_set('display_errors', '1');
+ERROR_REPORTING(E_ALL);
+
+interface Filter {
+	const TESTER_ACCOUNT = 'r03521602';
+	const INTERVAL = 15; // minutes
+}
+
+class Tracker {
+	
+	private $handle;
+	private $filename;
+	private $fields;
+	private $tester;
+	private $hookup;
+	
+	private $item;
+	private $subitem;
+	private $status;
+	private $end;
+	private $tick;
+
+	public function __construct() {
+		
+		$this->tester = Filter::TESTER_ACCOUNT;
+		$this->interval = Filter::INTERVAL;
+		
+		// Get item, subitem, status
+		$this->item = $_SERVER['argv'][1];
+		$this->subitem = $_SERVER['argv'][2];
+		$this->status = $_SERVER['argv'][3];
+		
+		// Configure csv file	
+		$this->filename = $this->interval . $this->status . '-' . $this->item . '_' . $this->subitem . '.csv';
+		$this->handle = fopen($this->filename, 'w');
+
+		// Configure title
+		$this->fields = array();
+		$timestamp = 'Timestamp';
+		$submission = 'Submission';
+		array_push($this->fields, $timestamp);
+		array_push($this->fields, $submission);
+		fputcsv($this->handle, $this->fields);
+
+		try {
+			$this->hookup = UniversalConnect::doConnect();
+			
+			// Fetch end time
+			$stmt = $this->hookup->prepare('SELECT max(timestamp) FROM process');
+			$stmt->execute();
+			$this->end = $stmt->fetchColumn();
+			
+			// Fetch start time
+			$stmt = $this->hookup->prepare('select min(timestamp) from process');
+			$stmt->execute();
+			$this->tick = $stmt->fetchcolumn();
+			
+			// Accumulate number of submissions of [status] every [time interval]
+			$this->fields = array();
+			while (strtotime($this->tick) <= strtotime($this->end)) {		
+				$stmt = $this->hookup->prepare('SELECT count(status) FROM process WHERE status=\'' . $this->status . '\' AND timestamp<=\'' . $this->tick . '\' AND item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account!=\'' . $this->tester . '\'');
+				$stmt->execute();
+				array_push($this->fields, $this->tick);
+				array_push($this->fields, $stmt->fetchColumn());
+				fputcsv($this->handle, $this->fields);
+				$this->fields = array();
+				
+				// Next tick
+				$tick =  new DateTime($this->tick);
+				$tick->add(new DateInterval('PT' . $this->interval . 'M'));
+				$this->tick = $tick->format('Y-m-d H:i:s');
+			}
+			
+			$this->hookup = null;
+			
+		}
+		catch (\PDOException $e) {
+			echo 'Error: ' . $e->getMessage() . '<br>';
+		}		
+		
+		fclose($this->handle);
+	
+		}
+}
+
+interface IConnectInfo {
+	const HOST = '45.32.107.147';
+	const UNAME = 'account';
+	const PW = 'password';
+	const DBNAME = 'TAFreeDB';
+	public static function doConnect();
+}
+
+class UniversalConnect implements IConnectInfo {
+	
+	private static $servername = IConnectInfo::HOST;
+	private static $dbname = IConnectInfo::DBNAME;
+	private static $username = IConnectInfo::UNAME;
+	private static $password = IConnectInfo::PW;
+	private static $conn;
+	public static function doConnect() {
+		self::$conn = new \PDO('mysql:host=' . self::$servername . ';dbname=' . self::$dbname, self::$username, self::$password);
+		self::$conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		return self::$conn;	
+	}
+}
+
+$tracker = new Tracker();
+
+?>

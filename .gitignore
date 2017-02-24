@@ -1,5 +1,5 @@
 # Ignore files with database password
-Recorder.php
+*.php
 
 # Ignore output files
 *.csv

@@ -1,0 +1,64 @@
+<?php 
+/**
+ * Clean students' submission records from TAFree
+ *
+ * @authur Yu Tzu Wu <abby8050@gmail.com>
+ * @license MIT
+ */
+
+ini_set('display_errors', '1');
+ERROR_REPORTING(E_ALL);
+
+class Cleaner {
+	
+	private $item;
+	private $subitem;
+	private $hookup;
+	
+	public function __construct() {
+		
+		// Get item, subitem
+		$this->item = $_SERVER['argv'][1];
+		$this->subitem = $_SERVER['argv'][2];
+
+		try {
+			$this->hookup = UniversalConnect::doConnect();
+			
+			$stmt = $this->hookup->prepare('DELETE FROM process WHERE item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\'');
+			$stmt->execute();
+
+			$this->hookup = null;
+			
+		}
+		catch (\PDOException $e) {
+			echo 'Error: ' . $e->getMessage() . '<br>';
+		}		
+		
+	}
+}
+
+interface IConnectInfo {
+	const HOST = '45.32.107.147';
+	const UNAME = 'account';
+	const PW = 'password';
+	const DBNAME = 'TAFreeDB';
+	public static function doConnect();
+}
+
+class UniversalConnect implements IConnectInfo {
+	
+	private static $servername = IConnectInfo::HOST;
+	private static $dbname = IConnectInfo::DBNAME;
+	private static $username = IConnectInfo::UNAME;
+	private static $password = IConnectInfo::PW;
+	private static $conn;
+	public static function doConnect() {
+		self::$conn = new \PDO('mysql:host=' . self::$servername . ';dbname=' . self::$dbname, self::$username, self::$password);
+		self::$conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		return self::$conn;	
+	}
+}
+
+$cleaner = new Cleaner();
+
+?>

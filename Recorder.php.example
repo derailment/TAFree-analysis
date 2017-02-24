@@ -20,6 +20,7 @@ class Recorder {
 	private $item;
 	private $subitem;
 	private $tester;
+	private $hookup;
 	private $handle;
 	private $filename;
 	private $fields;
