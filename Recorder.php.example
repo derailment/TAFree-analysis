@@ -11,8 +11,6 @@ ERROR_REPORTING(E_ALL);
 
 interface Filter {
 	const TESTER_ACCOUNT = 'r03521602';
-	const ITEM = 'Lab01';
-    const SUBITEM = 1;
 }
 
 class Recorder {
@@ -28,8 +26,8 @@ class Recorder {
 	public function __construct() {
 		
 		// Get item, subitem
-		$this->item = Filter::ITEM;	
-		$this->subitem = Filter::SUBITEM;
+		$this->item = $_SERVER['argv'][1];
+		$this->subitem = $_SERVER['argv'][2];
 		$this->tester = Filter::TESTER_ACCOUNT;
 		
 		// Configure csv file	
