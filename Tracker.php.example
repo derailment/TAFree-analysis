@@ -54,12 +54,12 @@ class Tracker {
 			$this->hookup = UniversalConnect::doConnect();
 			
 			// Fetch end time
-			$stmt = $this->hookup->prepare('SELECT max(timestamp) FROM process');
+			$stmt = $this->hookup->prepare('SELECT max(timestamp) FROM process WHERE student_account!=\'' . $this->tester . '\'');
 			$stmt->execute();
 			$this->end = $stmt->fetchColumn();
 			
 			// Fetch start time
-			$stmt = $this->hookup->prepare('select min(timestamp) from process');
+			$stmt = $this->hookup->prepare('select min(timestamp) from process WHERE student_account!=\'' . $this->tester . '\'');
 			$stmt->execute();
 			$this->tick = $stmt->fetchcolumn();
 			
