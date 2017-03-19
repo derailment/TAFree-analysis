@@ -22,4 +22,5 @@ sudo php Recorder.php Lab01 1
 sudo php Tracker.php Lab01 1 AC
 sudo php Cleaner.php Lab01 1
 sudo php Mover.php ./log/Lab01/Lab01_1.csv
+sudo php Accumulator.php Lab01 1
 ```

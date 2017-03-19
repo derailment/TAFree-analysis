@@ -1,0 +1,174 @@
+<?php 
+/**
+ * Accumulate each student's submission records from TAFreeDev
+ *
+ * @authur Yu Tzu Wu <abby8050@gmail.com>
+ * @license MIT
+ */
+
+ini_set('display_errors', '1');
+ERROR_REPORTING(E_ALL);
+
+interface Filter {
+	const TESTER_ACCOUNT = 'r03521602';
+}
+
+class Accumulator {
+	
+	private $item;
+	private $subitem;
+	private $tester;
+	private $hookup;
+	private $handle;
+	private $filename;
+	private $fields;
+	private $students = array();
+	
+	public function __construct() {
+		
+		// Get item, subitem
+		$this->item = $_SERVER['argv'][1];
+		$this->subitem = $_SERVER['argv'][2];
+		$this->tester = Filter::TESTER_ACCOUNT;
+		
+		// Configure csv file	
+		$this->filename = 'Acc-' . $this->item . '_' . $this->subitem . '.csv';
+		$this->handle = fopen($this->filename, 'w');
+		
+		// Configure title
+		$this->fields = array();
+		array_push($this->fields, 'Student Account');
+		array_push($this->fields, 'Start');
+		array_push($this->fields, 'End');
+		array_push($this->fields, 'Total Time(Min)');
+		array_push($this->fields, 'AC');
+		array_push($this->fields, 'WA');
+		array_push($this->fields, 'NA');
+		array_push($this->fields, 'RE');
+		array_push($this->fields, 'CE');
+		array_push($this->fields, 'SE');
+		array_push($this->fields, 'Submissions');
+		array_push($this->fields, 'Average Time(Min)');
+		fputcsv($this->handle, $this->fields);
+		$this->fields = array();
+		
+		// Configure content
+		try {
+			$this->hookup = UniversalConnect::doConnect();
+			
+			// Get student list
+			$stmt = $this->hookup->prepare('SELECT DISTINCT student_account FROM process WHERE item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account!=\'' . $this->tester . '\'');
+			$stmt->execute();
+			while($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            			array_push($this->students, $row['student_account']);
+			}
+
+			// Get row data	
+			foreach($this->students as $key => $student_account){
+				// Get student account
+				array_push($this->fields, $student_account);
+				
+				// Get start time
+				$stmt_start = $this->hookup->prepare('SELECT timestamp FROM process WHERE item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account=\'' . $student_account . '\' ORDER BY timestamp ASC LIMIT 1');
+				$stmt_start->execute();
+				$start = $stmt_start->fetch(\PDO::FETCH_ASSOC)['timestamp'];
+				array_push($this->fields, $start);
+
+				// Get end time
+				$stmt_end = $this->hookup->prepare('SELECT timestamp FROM process WHERE item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account=\'' . $student_account . '\' ORDER BY timestamp DESC LIMIT 1');
+				$stmt_end->execute();
+				$end = $stmt_end->fetch(\PDO::FETCH_ASSOC)['timestamp'];
+				array_push($this->fields, $end);
+				
+				// Get total time
+				$total_time = number_format((strtotime($end) - strtotime($start)) / 60.0, 2);
+				array_push($this->fields, $total_time);
+				
+				// Get numbers of AC, WA, NA, RE, CE, SE, and total submissions
+				$stmt_ac = $this->hookup->prepare('SELECT id FROM process WHERE status=\'AC\' AND item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account=\'' . $student_account . '\'');
+				$stmt_ac->execute();
+				$ac = $stmt_ac->rowCount();
+				array_push($this->fields, $ac);
+				
+				$stmt_wa = $this->hookup->prepare('SELECT id FROM process WHERE status=\'WA\' AND item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account=\'' . $student_account . '\'');
+				$stmt_wa->execute();
+				$wa = $stmt_wa->rowCount();
+				array_push($this->fields, $wa);
+			
+				$stmt_na = $this->hookup->prepare('SELECT id FROM process WHERE status=\'NA\' AND item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account=\'' . $student_account . '\'');
+				$stmt_na->execute();
+				$na = $stmt_na->rowCount();
+				array_push($this->fields, $na);
+
+				$stmt_re = $this->hookup->prepare('SELECT id FROM process WHERE status=\'RE\' AND item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account=\'' . $student_account . '\'');
+				$stmt_re->execute();
+				$re = $stmt_re->rowCount();
+				array_push($this->fields, $re);
+				
+				$stmt_ce = $this->hookup->prepare('SELECT id FROM process WHERE status=\'CE\' AND item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account=\'' . $student_account . '\'');
+				$stmt_ce->execute();
+				$ce = $stmt_ce->rowCount();	
+				array_push($this->fields, $ce);
+
+				$stmt_se = $this->hookup->prepare('SELECT id FROM process WHERE status=\'SE\' AND item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account=\'' . $student_account . '\'');
+				$stmt_se->execute();
+				$se = $stmt_se->rowCount();	
+				array_push($this->fields, $se);
+
+				$stmt_sub = $this->hookup->prepare('SELECT id FROM process WHERE item=\'' . $this->item . '\' AND subitem=\'' . $this->subitem . '\' AND student_account=\'' . $student_account . '\'');
+				$stmt_sub->execute();
+				$sub = $stmt_sub->rowCount();
+				array_push($this->fields, $sub);
+
+				// Get average time
+				if ($sub > 1) {
+					$avg = number_format((strtotime($end) - strtotime($start)) / ($sub - 1) / 60.0, 2);
+				}
+				else {
+					$avg = number_format(0, 2);
+				}
+				
+				// Insert row into csv file
+				array_push($this->fields, $avg);
+				fputcsv($this->handle, $this->fields);
+				$this->fields = array();	
+
+			}
+
+			$this->hookup = null;
+			
+		}
+		catch (\PDOException $e) {
+			echo 'Error: ' . $e->getMessage() . '<br>';
+		}		
+		
+		fclose($this->handle);
+		
+	}
+}
+
+interface IConnectInfo {
+	const HOST = '45.32.107.147';
+	const UNAME = 'account';
+	const PW = 'password';
+	const DBNAME = 'TAFreeDev';
+	public static function doConnect();
+}
+
+class UniversalConnect implements IConnectInfo {
+	
+	private static $servername = IConnectInfo::HOST;
+	private static $dbname = IConnectInfo::DBNAME;
+	private static $username = IConnectInfo::UNAME;
+	private static $password = IConnectInfo::PW;
+	private static $conn;
+	public static function doConnect() {
+		self::$conn = new \PDO('mysql:host=' . self::$servername . ';dbname=' . self::$dbname, self::$username, self::$password);
+		self::$conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		return self::$conn;	
+	}
+}
+
+$accumulator = new Accumulator();
+
+?>

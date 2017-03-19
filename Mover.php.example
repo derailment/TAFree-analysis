@@ -1,6 +1,6 @@
 <?php 
 /**
- * Fetch students' submission records from TAFree
+ * Move students' submission records from raw csv file to TAFreeDev
  *
  * @authur Yu Tzu Wu <abby8050@gmail.com>
  * @license MIT
