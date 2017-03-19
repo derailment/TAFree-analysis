@@ -16,7 +16,7 @@ interface IConnectInfo {
 ## Build and Run
 ```
 sudo git clone http://github.com/derailment/TAFree-analysis
-sudo chmod a+w ./student-code-analysis
+sudo chmod a+w ./TAFree-analysis
 sudo php Recorder.php [item] [subitem]
 sudo php Tracker.php [item] [subitem] [status]
 sudo php Cleaner.php [item] [subitem]
