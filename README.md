@@ -17,7 +17,9 @@ interface IConnectInfo {
 ```
 sudo git clone http://github.com/derailment/TAFree-analysis
 sudo chmod a+w ./TAFree-analysis
-sudo php Recorder.php [item] [subitem]
-sudo php Tracker.php [item] [subitem] [status]
-sudo php Cleaner.php [item] [subitem]
+cd ./TAFree-analysis
+sudo php Recorder.php Lab01 1
+sudo php Tracker.php Lab01 1 AC
+sudo php Cleaner.php Lab01 1
+sudo php Mover.php ./log/Lab01/Lab01_1.csv
 ```

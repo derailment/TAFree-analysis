@@ -1,0 +1,84 @@
+<?php 
+/**
+ * Fetch students' submission records from TAFree
+ *
+ * @authur Yu Tzu Wu <abby8050@gmail.com>
+ * @license MIT
+ */
+
+ini_set('display_errors', '1');
+ERROR_REPORTING(E_ALL);
+
+class Mover {
+	
+	private $filename;
+	private $item;
+	private $subitem;
+	private $handle;
+
+	private $hookup;
+	
+	public function __construct() {
+		
+		// Get csv file, item, subitem
+		$this->filename = $_SERVER['argv'][1];
+		preg_match('/(\w+)_(\d+)\.csv/', $this->filename, $matches);
+		$this->item = $matches[1];
+		$this->subitem = $matches[2];
+		
+		// Read csv file	
+		$this->handle = fopen($this->filename, 'r');
+		$header = fgetcsv($this->handle);
+		try {
+			$this->hookup = UniversalConnect::doConnect();
+			
+			// Insert into process table
+			while($row = fgetcsv($this->handle)) {
+				$this->timestamp = $row[0];
+				$this->student_name = $row[1];
+				$this->student_account = $row[2];
+				$this->status = $row[3];
+				$this->submitter = 'Backup';
+				$this->judger = 'Backup';
+				$this->id = uniqid();
+				$stmt = $this->hookup->prepare('INSERT INTO process (timestamp, student_name, student_account, item , subitem, status, submitter, judger, id) VALUES (\'' . $this->timestamp . '\', \'' . $this->student_name . '\', \'' . $this->student_account . '\', \'' . $this->item . '\', \'' . $this->subitem . '\', \'' . $this->status . '\', \'' . $this->submitter . '\', \'' . $this->judger . '\', \'' . $this->id . '\')');
+				$stmt->execute();
+			}
+	
+			$this->hookup = null;
+			
+		}
+		catch (\PDOException $e) {
+			echo 'Error: ' . $e->getMessage() . '<br>';
+		}		
+	
+		fclose($this->handle);
+		
+	}
+}
+
+interface IConnectInfo {
+	const HOST = '45.32.107.147';
+	const UNAME = 'account';
+	const PW = 'password';
+	const DBNAME = 'TAFreeDev';
+	public static function doConnect();
+}
+
+class UniversalConnect implements IConnectInfo {
+	
+	private static $servername = IConnectInfo::HOST;
+	private static $dbname = IConnectInfo::DBNAME;
+	private static $username = IConnectInfo::UNAME;
+	private static $password = IConnectInfo::PW;
+	private static $conn;
+	public static function doConnect() {
+		self::$conn = new \PDO('mysql:host=' . self::$servername . ';dbname=' . self::$dbname, self::$username, self::$password);
+		self::$conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		return self::$conn;	
+	}
+}
+
+$mover = new Mover();
+
+?>
