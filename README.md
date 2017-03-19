@@ -1,4 +1,4 @@
-# student-code-analysis
+# TAFree-analysis
 Here are analytic tools for performing usage of TAFree Online Judge in first programming course.
   
 ## Configuration
@@ -15,7 +15,7 @@ interface IConnectInfo {
   
 ## Build and Run
 ```
-sudo git clone http://github.com/derailment/student-code-analysis
+sudo git clone http://github.com/derailment/TAFree-analysis
 sudo chmod a+w ./student-code-analysis
 sudo php Recorder.php [item] [subitem]
 sudo php Tracker.php [item] [subitem] [status]
