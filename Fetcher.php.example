@@ -1,0 +1,289 @@
+<?php 
+/**
+ * Fetch each student's submission records before official deadline for training from TAFreeDev
+ *
+ * @authur Yu Tzu Wu <abby8050@gmail.com>
+ * @license MIT
+ */
+
+ini_set('display_errors', '1');
+ERROR_REPORTING(E_ALL);
+
+class Filter {
+	private $tester_account = 'r03521602';
+	private $items = array();
+	private $start = '09:00:00';
+	private $end = '13:30:59';
+
+	public function __construct() {
+
+		// Get items
+		for( $i = 0; $i < count($_SERVER['argv']) - 1; $i += 1) {
+			array_push($this->items, $_SERVER['argv'][$i + 1]);
+		}
+
+		// Clear all records from tester and non-exercising hours
+		$this->clear();
+
+	}
+
+	private function clear() {
+		try {
+			$this->hookup = UniversalConnect::doConnect();		
+			$stmt_tester = $this->hookup->prepare('DELETE FROM process WHERE student_account=\'' . $this->tester_account . '\'');
+			$stmt_tester->execute();
+			$stmt_offtime = $this->hookup->prepare('DELETE FROM process WHERE TIME(timestamp) <= \'' . $this->start . '\' OR TIME(timestamp) >=  \'' . $this->end . '\'');
+			$stmt_offtime->execute();	
+			$this->hookup = null;
+		}
+		catch (\PDOException $e) {
+			echo 'Error: ' . $e->getMessage() . '<br>';
+		}
+	}
+
+	public function getItems() {
+		return $this->items;
+	}
+}
+
+class Fetcher {
+	
+	private $item_subnum = array();
+	private $students = array();
+	private $hookup;
+	private $handle;
+	private $filename;
+	private $fields;
+
+	public function __construct() {
+
+		// Filter all that are nothing about training	
+		$filter = new Filter();
+
+		// Get student list, item-subitem number pair
+		try {
+			$this->hookup = UniversalConnect::doConnect();
+			$stmt_stu = $this->hookup->prepare('SELECT DISTINCT student_account FROM process');
+			$stmt_stu->execute();
+			while($row = $stmt_stu->fetch(\PDO::FETCH_ASSOC)) {
+            			array_push($this->students, $row['student_account']);
+			}
+
+			foreach($filter->getItems() as $item) {
+				$stmt_sub = $this->hookup->prepare('SELECT MAX(subitem) FROM process WHERE item=\'' . $item . '\'');
+				$stmt_sub->execute();
+				$row = $stmt_sub->fetchAll();
+				$this->item_subnum = array_merge($this->item_subnum, array($item => $row[0][0]));
+			}
+			
+			// Configure csv file	
+			$this->filename = 'Data' . date('Ymd') . '.csv';
+			$this->handle = fopen($this->filename, 'w');
+		
+			// Configure header
+			$this->fields = array();
+			array_push($this->fields, 'Student_Account');
+			array_push($this->fields, 'AC');
+			array_push($this->fields, 'WA');
+			array_push($this->fields, 'NA');
+			array_push($this->fields, 'RE');
+			array_push($this->fields, 'CE');
+			array_push($this->fields, 'SE');
+			array_push($this->fields, 'TLE');
+			array_push($this->fields, 'Submissions');
+			array_push($this->fields, 'Total_Time(Min)');
+			array_push($this->fields, 'Average_Time(Min)');
+			array_push($this->fields, 'Finish_Rate(%)');
+			
+			fputcsv($this->handle, $this->fields);
+			$this->fields = array();
+				
+			// Insert row into csv file
+			foreach($this->students as $student) {
+				array_push($this->fields, $student);
+				array_push($this->fields, $this->countStatus('AC', $student));
+				array_push($this->fields, $this->countStatus('WA', $student));
+				array_push($this->fields, $this->countStatus('NA', $student));
+				array_push($this->fields, $this->countStatus('RE', $student));
+				array_push($this->fields, $this->countStatus('CE', $student));
+				array_push($this->fields, $this->countStatus('SE', $student));
+				array_push($this->fields, $this->countStatus('TLE', $student));
+				array_push($this->fields, $this->countSubmission($student));
+				array_push($this->fields, $this->getTotalTime($student));
+				array_push($this->fields, $this->getAvgTime($student));
+				array_push($this->fields, $this->countFinish($student));
+				fputcsv($this->handle, $this->fields);
+				$this->fields = array();
+			}
+			
+			$this->hookup = null;
+			
+			fclose($this->handle);
+			
+		}
+		catch (\PDOException $e) {
+			echo 'Error: ' . $e->getMessage() . '<br>';
+		}		
+
+	}
+
+	public function countStatus($status, $student_account) {
+		$sum = 0;
+		$total = 0;
+		foreach($this->item_subnum as $item => $number) {
+			for($i = 1; $i <= $number; $i += 1) {
+				if(!$this->tryToDo($student_account, $item, $i)) {
+					continue;
+				}
+				$stmt = $this->hookup->prepare('SELECT id FROM process WHERE status=\'' . $status . '\' AND student_account=\'' . $student_account . '\' AND item=\'' . $item . '\' AND subitem=\'' . $i . '\'');
+				$stmt->execute();
+				$sum += $stmt->rowCount();
+				$total++;
+			}
+		}
+		$avg = (double) $sum / (double) $total;
+		return number_format($avg, 2);
+	}
+
+	public function countSubmission($student_account) {
+		$sum = 0;
+		$total = 0;
+		foreach($this->item_subnum as $item => $number) {
+			for($i = 1; $i <= $number; $i += 1) {
+				if(!$this->tryToDo($student_account, $item, $i)) {
+					continue;
+				}
+				$stmt = $this->hookup->prepare('SELECT id FROM process WHERE student_account=\'' . $student_account . '\' AND item=\'' . $item . '\' AND subitem=\'' . $i . '\'');
+				$stmt->execute();
+				$sum += $stmt->rowCount();
+				$total++;
+			}
+		}
+		$avg = (double) $sum / (double) $total;
+		return number_format($avg, 2);
+	}
+
+	public function	countFinish($student_account) {
+		$sum = 0;
+		$total = 0;
+		foreach($this->item_subnum as $item => $number) {
+			for ($i = 1; $i <= $number; $i += 1){
+				$stmt = $this->hookup->prepare('SELECT id FROM process WHERE status=\'AC\' AND student_account=\'' . $student_account . '\' AND item=\'' . $item . '\' AND subitem=\'' . $i . '\'');
+				$stmt->execute();
+				if ($stmt->rowCount() != 0) {
+					$sum += 1;
+				}
+				$total++;
+			}
+		}
+		$avg = (double) $sum * 100.0 / (double) $total;
+		return number_format($avg, 2);
+	}
+
+	public function isFinish($student_account, $item, $subitem) {
+		$stmt = $this->hookup->prepare('SELECT id FROM process WHERE status=\'AC\' AND student_account=\'' . $student_account . '\' AND item=\'' . $item . '\' AND subitem=\'' . $subitem . '\'');
+		$stmt->execute();
+		if($stmt->rowCount() != 0) {
+			return true;
+		}
+		return false;
+	}
+
+	public function tryToDo($student_account, $item, $subitem) {
+		$stmt = $this->hookup->prepare('SELECT id FROM process WHERE student_account=\'' . $student_account . '\' AND item=\'' . $item . '\' AND subitem=\'' . $subitem . '\'');
+		$stmt->execute();
+		if($stmt->rowCount() != 0) {
+			return true;
+		}
+		return false;
+	}
+
+	public function getTotalTime($student_account) {
+		$total_time = 0.0;
+		$total = 0;
+		foreach($this->item_subnum as $item => $number) {
+			for($i = 1; $i <= $number; $i += 1) {
+			
+				if(!$this->isFinish($student_account, $item, $i)) {
+					continue;
+				}
+				
+				$stmt_start = $this->hookup->prepare('SELECT timestamp FROM process WHERE item=\'' . $item . '\' AND subitem=\'' . $i . '\' AND student_account=\'' . $student_account . '\' ORDER BY timestamp ASC LIMIT 1');
+				$stmt_start->execute();
+				$start = $stmt_start->fetch(\PDO::FETCH_ASSOC)['timestamp'];
+				
+				$stmt_end = $this->hookup->prepare('SELECT timestamp FROM process WHERE item=\'' . $item . '\' AND subitem=\'' . $i . '\' AND student_account=\'' . $student_account . '\' ORDER BY timestamp DESC LIMIT 1');
+				$stmt_end->execute();
+				$end = $stmt_end->fetch(\PDO::FETCH_ASSOC)['timestamp'];
+				
+				$total_time += (double)(strtotime($end) - strtotime($start)) / 60.0;
+				$total += 1;
+			
+			}
+		}
+		$avg = (double) $total_time / (double) $total;
+		return number_format($avg, 2);
+	}
+
+	public function getAvgTime($student_account){
+		$avg_time = 0.0;
+		$total = 0;
+		foreach($this->item_subnum as $item => $number) {
+			for($i = 1; $i <= $number; $i += 1) {
+				
+				if(!$this->tryToDo($student_account, $item, $i)) {
+					continue;
+				}
+				
+				$stmt_start = $this->hookup->prepare('SELECT timestamp FROM process WHERE item=\'' . $item . '\' AND subitem=\'' . $i . '\' AND student_account=\'' . $student_account . '\' ORDER BY timestamp ASC LIMIT 1');
+				$stmt_start->execute();
+				$start = $stmt_start->fetch(\PDO::FETCH_ASSOC)['timestamp'];
+				
+				$stmt_end = $this->hookup->prepare('SELECT timestamp FROM process WHERE item=\'' . $item . '\' AND subitem=\'' . $i . '\' AND student_account=\'' . $student_account . '\' ORDER BY timestamp DESC LIMIT 1');
+				$stmt_end->execute();
+				$end = $stmt_end->fetch(\PDO::FETCH_ASSOC)['timestamp'];
+			
+				$stmt_sub = $this->hookup->prepare('SELECT id FROM process WHERE student_account=\'' . $student_account . '\' AND item=\'' . $item . '\' AND subitem=\'' . $i . '\'');
+				$stmt_sub->execute();
+				$total_sub = $stmt_sub->rowCount();	
+				
+				if ($total_sub != 1){
+					$avg_time += (double)(strtotime($end) - strtotime($start)) / 60.0 / (double)($total_sub - 1);
+				}
+				else {
+					$avg_time += 0;
+				}
+				$total += 1;
+			
+			}
+		}
+		$avg = (double) $avg_time / (double) $total;
+		return number_format($avg, 2);
+	}
+}
+
+interface IConnectInfo {
+	const HOST = '45.32.107.147';
+	const UNAME = 'account';
+	const PW = 'password';
+	const DBNAME = 'TAFreeDev';
+	public static function doConnect();
+}
+
+class UniversalConnect implements IConnectInfo {
+	
+	private static $servername = IConnectInfo::HOST;
+	private static $dbname = IConnectInfo::DBNAME;
+	private static $username = IConnectInfo::UNAME;
+	private static $password = IConnectInfo::PW;
+	private static $conn;
+	public static function doConnect() {
+		self::$conn = new \PDO('mysql:host=' . self::$servername . ';dbname=' . self::$dbname, self::$username, self::$password);
+		self::$conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		return self::$conn;	
+	}
+}
+
+$fetcher = new Fetcher();
+
+?>
