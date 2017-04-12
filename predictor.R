@@ -28,9 +28,10 @@ input.test = input[test.ids,]
 
 # Generate decision tree
 #install.packages("rpart", repos="http://cran.csie.ntu.edu.tw/")
+#install.packages("rpart.plot", repos="http://cran.csie.ntu.edu.tw/")
 library(rpart)
+library(rpart.plot)
 input.tree = rpart(Score ~ ., data=input.train)
 jpeg("tree.jpg")
-plot(input.tree)
-text(input.tree)
+prp(input.tree, faclen=0, fallen.leaves=TRUE)
 dev.off()
