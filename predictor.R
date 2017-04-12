@@ -18,10 +18,10 @@ input = read.csv(file=args[1], sep=",", header=TRUE)
 output = read.csv(file=args[2], sep=",", header=TRUE)
 
 
-# Preparing 70% training and 30% testing data from training file
-drops = c("Level", "Student_Account", "Pass...60.")
+# Preparing 90% training and 10% testing data from training file
+drops = c("Score", "Student_Account", "Level")
 input = input[, !names(input) %in% drops]
-test.ids = sample(1:nrow(input), 0.3 * nrow(input))
+test.ids = sample(1:nrow(input), 0.1 * nrow(input))
 input.train = input[-test.ids,] 
 input.test = input[test.ids,]
 
@@ -31,7 +31,23 @@ input.test = input[test.ids,]
 #install.packages("rpart.plot", repos="http://cran.csie.ntu.edu.tw/")
 library(rpart)
 library(rpart.plot)
-input.tree = rpart(Score ~ ., data=input.train)
-jpeg("tree.jpg")
-prp(input.tree, faclen=0, fallen.leaves=TRUE)
-dev.off()
+input.tree = rpart(Pass...60. ~ ., data=input.train)
+#jpeg("tree.jpg")
+#prp(input.tree, faclen=0, fallen.leaves=TRUE, shadow.col="gray")
+#dev.off()
+
+
+# Train confusion matrix
+train.pred = predict(input.tree, newdata=input.train, type="class")
+train.real = input$Pass...60.[-test.ids]
+table.train = table(train.real, train.pred)
+cat("Total training records:", sum(table.train), "\nCorrect classification Ratio:", sum(diag(table.train)) * 100 / sum(table.train), "%\n");
+
+
+# Test confusion matrix
+test.pred = predict(input.tree, newdata=input.test, type="class")
+test.real = input$Pass...60.[test.ids]
+table.test = table(test.real, test.pred)
+cat("Total test records:", sum(table.test), "\nCorrect classification Ratio:", sum(diag(table.test)) * 100 / sum(table.test), "%\n");
+
+
