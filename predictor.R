@@ -18,10 +18,10 @@ input = read.csv(file=args[1], sep=",", header=TRUE)
 output = read.csv(file=args[2], sep=",", header=TRUE)
 
 
-# Preparing 90% training and 10% testing data from training file
+# Preparing 70% training and 30% testing data from training file
 drops = c("Score", "Student_Account", "Level")
 input = input[, !names(input) %in% drops]
-test.ids = sample(1:nrow(input), 0.1 * nrow(input))
+test.ids = sample(1:nrow(input), 0.3 * nrow(input))
 input.train = input[-test.ids,] 
 input.test = input[test.ids,]
 
@@ -35,7 +35,7 @@ input.tree = rpart(Pass...60. ~ ., data=input.train)
 #jpeg("tree.jpg")
 #prp(input.tree, faclen=0, fallen.leaves=TRUE, shadow.col="gray")
 #dev.off()
-
+#input.tree
 
 # Train confusion matrix
 train.pred = predict(input.tree, newdata=input.train, type="class")
