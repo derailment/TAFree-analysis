@@ -22,6 +22,9 @@ drops = c("Pass...60.", "Student_Account", "Level")
 df = input[, !names(input) %in% drops]
 mat = round(cor(df, method="pearson"), 2)
 write.table(mat, file="corr_matrix.csv", sep=",", col.names=NA)
+install.packages("acepack", repos="https://cran.ism.ac.jp/")
+#require(Hmisc)
+#rcorr(mat, type="pearson") 
 
 # Ignore columns
 drops = c("Pass...60.", "Student_Account", "Score")
