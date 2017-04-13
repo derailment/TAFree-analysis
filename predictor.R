@@ -20,11 +20,11 @@ output = read.csv(file=args[2], sep=",", header=TRUE)
 # Pearson correlation coefficient matrix
 drops = c("Pass...60.", "Student_Account", "Level")
 df = input[, !names(input) %in% drops]
-mat = round(cor(df, method="pearson"), 2)
-write.table(mat, file="corr_matrix.csv", sep=",", col.names=NA)
-install.packages("/home/abby/TAFree-analysis/Hmisc_4.0-2.tar.gz", repos = NULL, type="source")
-#require(Hmisc)
-#rcorr(mat, type="pearson") 
+require(Hmisc)
+mat.corr = round(rcorr(data.matrix(df), type="pearson")$r, 2)
+write.table(mat.corr, file="corr_matrix.csv", sep=",", col.names=NA)
+mat.pval = round(rcorr(data.matrix(df), type="pearson")$P, 2)
+write.table(mat.pval, file="pval_matrix.csv", sep=",", col.names=NA)
 
 # Ignore columns
 drops = c("Pass...60.", "Student_Account", "Score")
