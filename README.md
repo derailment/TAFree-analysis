@@ -24,4 +24,5 @@ sudo php Cleaner.php Lab01 1
 sudo php Mover.php ./log/Lab01/Lab01_1.csv
 sudo php Accumulator.php Lab01 1
 sudo php Fetcher.php Lab01 Lab02 Lab03 Lab04
+sudo Rscript predictor.R ./train/Data20170412.csv ./pred/PredQuiz1.csv
 ```

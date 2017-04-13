@@ -33,13 +33,13 @@ bestcp = tree$cptable[which.min(tree$cptable[, "xerror"]), "CP"]
 tree.pruned = prune(tree, cp=bestcp)
 
 # Confusion matrix (training data)
-train.real = input$Level
-train.pred = predict(tree, newdata=input, type="class")
-table.train = table(train.pred, train.real)
+input.real = input$Level
+input.pred = predict(tree, newdata=input, type="class")
+table.train = table(input.pred, input.real)
 cat("Total training records:", sum(table.train), "\nCorrect Classification Ratio:", sum(diag(table.train)) * 100 / sum(table.train), "%\n");
 ratio = round(sum(diag(table.train)) * 100 / sum(table.train), 2)
-train.pred = predict(tree.pruned, newdata=input, type="class")
-table.train = table(train.pred, train.real)
+input.pred = predict(tree.pruned, newdata=input, type="class")
+table.train = table(input.pred, input.real)
 cat("Total training records:", sum(table.train), "\nCorrect Classification Ratio (pruned) :", sum(diag(table.train)) * 100 / sum(table.train), "%\n");
 ratio.pruned = round(sum(diag(table.train)) * 100 / sum(table.train), 2)
 
@@ -57,4 +57,13 @@ jpeg("level_pruned.jpg")
 title = paste("Pruned Level Classifier (", ratio.pruned, "%)")
 prp(tree.pruned, faclen=0, cex=0.8, node.fun=tot_count, main=title)
 dev.off()
+
+# Predict new data
+output.pred = data.frame(output, Level=predict(tree, newdata=output, type="class"))
+output.pruned = data.frame(output, Level=predict(tree.pruned, newdata=output, type="class"))
+
+# Write to output file
+write.table(output.pred, file="level_pred.csv", sep=",", row.names=FALSE)
+write.table(output.pruned, file="level_pruned.csv", sep=",", row.names=FALSE)
+
 
