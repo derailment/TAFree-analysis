@@ -7,47 +7,54 @@
 # License:      MIT
 
 
-# Read training file and predictable file
+# Read input file and output file
 args = commandArgs(trailingOnly=TRUE)
 if (length(args)==0) {
-	stop("Please supply training file(.csv) and predictable file(.csv)")
+	stop("Please supply input file(.csv) and output file(.csv)")
 } else if (length(args)==1) {
-	stop("Please supply predictable file(.csv)")
+	stop("Please supply output file(.csv)")
 }
 input = read.csv(file=args[1], sep=",", header=TRUE)
 output = read.csv(file=args[2], sep=",", header=TRUE)
 
-
-# Preparing 70% training and 30% testing data from training file
-drops = c("Score", "Student_Account", "Level")
+# Ignore columns
+drops = c("Pass...60.", "Student_Account", "Score")
 input = input[, !names(input) %in% drops]
-test.ids = sample(1:nrow(input), 0.3 * nrow(input))
-input.train = input[-test.ids,] 
-input.test = input[test.ids,]
 
+# Generate decision tree with a small cp
+require(rpart)
+set.seed(10)
+tree = rpart(Level ~ ., data=input, control=rpart.control(cp=0.001))
 
-# Generate decision tree
-#install.packages("rpart", repos="http://cran.csie.ntu.edu.tw/")
-#install.packages("rpart.plot", repos="http://cran.csie.ntu.edu.tw/")
-library(rpart)
-library(rpart.plot)
-input.tree = rpart(Pass...60. ~ ., data=input.train)
-#jpeg("tree.jpg")
-#prp(input.tree, faclen=0, fallen.leaves=TRUE, shadow.col="gray")
-#dev.off()
-#input.tree
+# Pick the cp that minimizes the xerror for cross-valification
+bestcp = tree$cptable[which.min(tree$cptable[, "xerror"]), "CP"]
 
-# Train confusion matrix
-train.pred = predict(input.tree, newdata=input.train, type="class")
-train.real = input$Pass...60.[-test.ids]
-table.train = table(train.real, train.pred)
-cat("Total training records:", sum(table.train), "\nCorrect classification Ratio:", sum(diag(table.train)) * 100 / sum(table.train), "%\n");
+# Prune the tree using the best cp
+tree.pruned = prune(tree, cp=bestcp)
 
+# Confusion matrix (training data)
+train.real = input$Level
+train.pred = predict(tree, newdata=input, type="class")
+table.train = table(train.pred, train.real)
+cat("Total training records:", sum(table.train), "\nCorrect Classification Ratio:", sum(diag(table.train)) * 100 / sum(table.train), "%\n");
+ratio = round(sum(diag(table.train)) * 100 / sum(table.train), 2)
+train.pred = predict(tree.pruned, newdata=input, type="class")
+table.train = table(train.pred, train.real)
+cat("Total training records:", sum(table.train), "\nCorrect Classification Ratio (pruned) :", sum(diag(table.train)) * 100 / sum(table.train), "%\n");
+ratio.pruned = round(sum(diag(table.train)) * 100 / sum(table.train), 2)
 
-# Test confusion matrix
-test.pred = predict(input.tree, newdata=input.test, type="class")
-test.real = input$Pass...60.[test.ids]
-table.test = table(test.real, test.pred)
-cat("Total test records:", sum(table.test), "\nCorrect classification Ratio:", sum(diag(table.test)) * 100 / sum(table.test), "%\n");
-
+# Export decision tree image
+require(rpart.plot)
+tot_count <- function(x, labs, digits, varlen)
+{
+	paste(labs, "\n\nn =", x$frame$n)
+}
+jpeg("level.jpg")
+title = paste("Level Classifier (", ratio, "%)")
+prp(tree, faclen=0, cex=0.8, node.fun=tot_count, main=title)
+dev.off()
+jpeg("level_pruned.jpg")
+title = paste("Pruned Level Classifier (", ratio.pruned, "%)")
+prp(tree.pruned, faclen=0, cex=0.8, node.fun=tot_count, main=title)
+dev.off()
 
