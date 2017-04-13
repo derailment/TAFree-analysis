@@ -17,6 +17,12 @@ if (length(args)==0) {
 input = read.csv(file=args[1], sep=",", header=TRUE)
 output = read.csv(file=args[2], sep=",", header=TRUE)
 
+# Pearson correlation coefficient matrix
+drops = c("Pass...60.", "Student_Account", "Level")
+df = input[, !names(input) %in% drops]
+mat = round(cor(df, method="pearson"), 2)
+write.table(mat, file="corr_matrix.csv", sep=",", col.names=NA)
+
 # Ignore columns
 drops = c("Pass...60.", "Student_Account", "Score")
 input = input[, !names(input) %in% drops]
@@ -65,5 +71,3 @@ output.pruned = data.frame(output, Level=predict(tree.pruned, newdata=output, ty
 # Write to output file
 write.table(output.pred, file="level_pred.csv", sep=",", row.names=FALSE)
 write.table(output.pruned, file="level_pruned.csv", sep=",", row.names=FALSE)
-
-
