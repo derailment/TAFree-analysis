@@ -22,7 +22,7 @@ drops = c("Pass...60.", "Student_Account", "Level")
 df = input[, !names(input) %in% drops]
 mat = round(cor(df, method="pearson"), 2)
 write.table(mat, file="corr_matrix.csv", sep=",", col.names=NA)
-install.packages("acepack", repos="https://cran.ism.ac.jp/")
+install.packages("/home/abby/TAFree-analysis/Hmisc_4.0-2.tar.gz", repos = NULL, type="source")
 #require(Hmisc)
 #rcorr(mat, type="pearson") 
 
