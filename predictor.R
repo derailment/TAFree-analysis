@@ -30,10 +30,13 @@ write.table(mat.pval, file="pval_matrix.csv", sep=",", col.names=NA)
 drops = c("Pass...60.", "Student_Account", "Score")
 input = input[, !names(input) %in% drops]
 
-# Generate decision tree with a small cp
+# Generate decision tree with each node at least 1 data
 require(rpart)
 set.seed(10)
-tree = rpart(Level ~ ., data=input, control=rpart.control(cp=0.001))
+tree = rpart(Level ~ ., data=input, control=rpart.control(minsplit=1))
+jpeg("cp.jpg")
+plotcp(tree)
+dev.off()
 
 # Pick the cp that minimizes the xerror for cross-valification
 bestcp = tree$cptable[which.min(tree$cptable[, "xerror"]), "CP"]
