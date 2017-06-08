@@ -21,22 +21,22 @@ summary(input)
 y <- input[['Submissions']]
 x <- input[['WA']]
 jpeg('SUB_WA.jpg')
-plot(x, y, xlim=c(0, max(x)+5), ylim=c(0, max(y)+5), main='Avg. Sub. vs. Avg. WA', xlab='Avg. WA', ylab='Submissions')
+plot(x, y, xlim=c(0, max(x)+5), ylim=c(0, max(y)+5), main='Avg. Sub. vs. Avg. WA', xlab='Avg. WA', ylab='Avg. Sub.')
 abline(lsfit(x, y))
 dev.off()
 x <- input[['CE']]
 jpeg('SUB_CE.jpg')
-plot(x, y, xlim=c(0, max(x)+5), ylim=c(0, max(y)+5), main='Avg. Sub. vs. Avg. CE', xlab='Avg. CE', ylab='Submissions')
+plot(x, y, xlim=c(0, max(x)+5), ylim=c(0, max(y)+5), main='Avg. Sub. vs. Avg. CE', xlab='Avg. CE', ylab='Avg. Sub.')
 abline(lsfit(x, y))
 dev.off()
 x <- input[['RE']]
 jpeg('SUB_RE.jpg')
-plot(x, y, xlim=c(0, max(x)+5), ylim=c(0, max(y)+5), main='Avg. Sub. vs. Avg. RE', xlab='Avg. RE', ylab='Submissions')
+plot(x, y, xlim=c(0, max(x)+5), ylim=c(0, max(y)+5), main='Avg. Sub. vs. Avg. RE', xlab='Avg. RE', ylab='Avg. Sub.')
 abline(lsfit(x, y))
 dev.off()
 x <- input[['NA.']]
 jpeg('SUB_NA.jpg')
-plot(x, y, xlim=c(0, max(x)+5), ylim=c(0, max(y)+5), main='Avg. Sub. vs. Avg. NA', xlab='Avg. NA', ylab='Submissions')
+plot(x, y, xlim=c(0, max(x)+5), ylim=c(0, max(y)+5), main='Avg. Sub. vs. Avg. NA', xlab='Avg. NA', ylab='Avg. Sub.')
 abline(lsfit(x, y))
 dev.off()
 
